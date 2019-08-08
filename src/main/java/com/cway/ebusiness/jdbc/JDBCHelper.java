@@ -19,9 +19,11 @@ public class JDBCHelper {
     private static JDBCHelper instance = null;
 
     public static JDBCHelper getInstance() {
-        if (instance == null) {
-            synchronized (JDBCHelper.class) {
-                instance = new JDBCHelper();
+        if(instance == null) {
+            synchronized(JDBCHelper.class) {
+                if(instance == null) {
+                    instance = new JDBCHelper();
+                }
             }
         }
         return instance;

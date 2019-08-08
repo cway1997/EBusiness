@@ -9,9 +9,11 @@ import com.cway.ebusiness.domain.Task;
 import com.cway.ebusiness.test.MockData;
 import com.cway.ebusiness.util.ParamUtils;
 import com.cway.ebusiness.util.StringUtils;
+import com.cway.ebusiness.util.ValidUtils;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
@@ -37,12 +39,10 @@ import java.util.Iterator;
 public class UserVisitSessionAnalyze {
     public static void main(String[] args) {
         // 构建上下文
-//        SparkConf sparkConf = new SparkConf().setAppName(Constants.SPARK_APP_NAME_SESSION).setMaster("local");
-//        SparkSession sparkSession = SparkSession.builder().enableHiveSupport().getOrCreate();
         SparkSession sparkSession = SparkSession.builder()
                 .appName(Constants.SPARK_APP_NAME_SESSION)
                 .master("local[*]")
-//        .config("xxx","xx")
+//                .config("xxx","xx")
                 .enableHiveSupport()
                 .getOrCreate();
         JavaSparkContext sc = new JavaSparkContext(sparkSession.sparkContext());
@@ -57,9 +57,19 @@ public class UserVisitSessionAnalyze {
         JSONObject taskParam = JSONObject.parseObject(task.getTaskParam());
         JavaRDD<Row> actionRDD = getActionRDDByDateRange(sparkSession, taskParam);
 
+        // <sessionId, (sessionId, searchKeywords, clickCategoryIds, age, professional, city, sex)>
         JavaPairRDD<String, String> sessionId2AggrInfoRDD = aggregateBySession(sparkSession, actionRDD);
 
+        System.out.println(sessionId2AggrInfoRDD.count());
+        for (Tuple2<String, String> tuple2 : sessionId2AggrInfoRDD.take(10)) {
+            System.out.println(tuple2._2);
+        }
 
+        JavaPairRDD<String, String> filteredSessionId2AggrRDD = filterSession(sessionId2AggrInfoRDD, taskParam);
+        System.out.println(filteredSessionId2AggrRDD.count());
+        for (Tuple2<String, String> tuple2 : filteredSessionId2AggrRDD.take(10)) {
+            System.out.println(tuple2._2);
+        }
 
         sc.close();
     }
@@ -90,104 +100,139 @@ public class UserVisitSessionAnalyze {
      */
     private static JavaPairRDD<String, String> aggregateBySession(SparkSession sparkSession, JavaRDD<Row> actionRDD) {
         // Row -> <session,Row>
-        JavaPairRDD<String, Row> session2ActionRDD = actionRDD.mapToPair(new PairFunction<Row, String, Row>() {
 
-            public static final long serialVersionUID = 1L;
-
-            @Override
-            public Tuple2<String, Row> call(Row row) throws Exception {
-                return new Tuple2<String, Row>(row.getString(2), row);
-            }
-        });
+        JavaPairRDD<String, Row> session2ActionRDD = actionRDD.mapToPair((PairFunction<Row, String, Row>) row -> new Tuple2<>(row.getString(2), row));
 
         // 分组
         JavaPairRDD<String, Iterable<Row>> session2ActionsRDD = session2ActionRDD.groupByKey();
 
         // <userId, partAggrInfo(sessionId,searchKeywords,clickCategoryIds)>
-        JavaPairRDD<Long, String> userId2PartAggrInfoRDD = session2ActionsRDD.mapToPair(new PairFunction<Tuple2<String, Iterable<Row>>, Long, String>() {
-            @Override
-            public Tuple2<Long, String> call(Tuple2<String, Iterable<Row>> tuple2) throws Exception {
-                String sessionId = tuple2._1;
-                Iterator<Row> iterator = tuple2._2.iterator();
+        JavaPairRDD<Long, String> userId2PartAggrInfoRDD = session2ActionsRDD.mapToPair((PairFunction<Tuple2<String, Iterable<Row>>, Long, String>) tuple2 -> {
+            String sessionId = tuple2._1;
+            Iterator<Row> iterator = tuple2._2.iterator();
 
-                StringBuffer searchKeywordBuffer = new StringBuffer("");
-                StringBuffer clickCategoryIdsBuffer = new StringBuffer("");
+            StringBuffer searchKeywordBuffer = new StringBuffer("");
+            StringBuffer clickCategoryIdsBuffer = new StringBuffer("");
 
-                Long userId = null;
+            Long userId = null;
 
-                while (iterator.hasNext()) {
-                    Row row = iterator.next();
-                    if (userId == null) {
-                        userId = row.getLong(1);
+            while (iterator.hasNext()) {
+                Row row = iterator.next();
+                if (userId == null) {
+                    userId = row.getLong(1);
+                }
+                String seachKeyword = row.getString(5);
+                Long clickCategory = (row.get(6) == null ? null : row.getLong(6));
+                // 并非所有行为都有这两个字段
+
+                if (StringUtils.isNotEmpty(seachKeyword)) {
+                    if (!searchKeywordBuffer.toString().contains(seachKeyword)) {
+                        searchKeywordBuffer.append(seachKeyword + ",");
                     }
-                    String seachKeyword = row.getString(5);
-                    Long clickCategory = row.getLong(6);
-                    // 并非所有行为都有这两个字段
-
-                    if (StringUtils.isNotEmpty(seachKeyword)) {
-                        if (!searchKeywordBuffer.toString().contains(seachKeyword)) {
-                            searchKeywordBuffer.append(seachKeyword + ",");
-                        }
-                    }
-
-                    if (clickCategory != null) {
-                        if (!clickCategoryIdsBuffer.toString().contains(String.valueOf(clickCategory))) {
-                            clickCategoryIdsBuffer.append(clickCategory + ",");
-                        }
-                    }
-
-
                 }
 
-                String searchKeywords = StringUtils.trimComma(searchKeywordBuffer.toString());
-                String clickCategoryIds = StringUtils.trimComma(clickCategoryIdsBuffer.toString());
+                if (clickCategory != null) {
+                    if (!clickCategoryIdsBuffer.toString().contains(String.valueOf(clickCategory))) {
+                        clickCategoryIdsBuffer.append(clickCategory + ",");
+                    }
+                }
 
-                // key=value|key=value
-                String partAggrInfo = Constants.FIELD_SESSION_ID + "=" + sessionId + "|" +
-                        Constants.FIELD_SEARCH_KEYWORDS + "=" + searchKeywords + "|" +
-                        Constants.FIELD_CLICK_CATEGORY_IDS + "=" + clickCategoryIds;
-
-                return new Tuple2<Long, String>(userId, partAggrInfo);
             }
+
+            String searchKeywords = StringUtils.trimComma(searchKeywordBuffer.toString());
+            String clickCategoryIds = StringUtils.trimComma(clickCategoryIdsBuffer.toString());
+
+            // key=value|key=value
+            String partAggrInfo = Constants.FIELD_SESSION_ID + "=" + sessionId + "|" +
+                    Constants.FIELD_SEARCH_KEYWORDS + "=" + searchKeywords + "|" +
+                    Constants.FIELD_CLICK_CATEGORY_IDS + "=" + clickCategoryIds;
+
+            return new Tuple2<>(userId, partAggrInfo);
         });
 
         // 查询所有用户数据
         String sql = "select * from user_info";
         JavaRDD<Row> userInfoRDD = sparkSession.sql(sql).javaRDD();
 
-        JavaPairRDD<Long, Row> userId2InfoRDD = userInfoRDD.mapToPair(new PairFunction<Row, Long, Row>() {
-            @Override
-            public Tuple2<Long, Row> call(Row row) throws Exception {
-                return new Tuple2<>(row.getLong(0), row);
-            }
-        });
+        JavaPairRDD<Long, Row> userId2InfoRDD = userInfoRDD.mapToPair((PairFunction<Row, Long, Row>) row -> new Tuple2<>(row.getLong(0), row));
 
         JavaPairRDD<Long, Tuple2<String, Row>> userId2FullInfoRDD = userId2PartAggrInfoRDD.join(userId2InfoRDD);
 
-        JavaPairRDD<String, String> sessionId2FullAggrInfoRDD = userId2FullInfoRDD.mapToPair(new PairFunction<Tuple2<Long, Tuple2<String, Row>>, String, String>() {
-            @Override
-            public Tuple2<String, String> call(Tuple2<Long, Tuple2<String, Row>> tuple) throws Exception {
-                String partAggrInfo = tuple._2._1;
-                Row userInfoRow = tuple._2._2;
+        JavaPairRDD<String, String> sessionId2FullAggrInfoRDD = userId2FullInfoRDD.mapToPair((PairFunction<Tuple2<Long, Tuple2<String, Row>>, String, String>) tuple -> {
+            String partAggrInfo = tuple._2._1;
+            Row userInfoRow = tuple._2._2;
 
-                String sessionId = StringUtils.getFieldFromConcatString(partAggrInfo, "\\|", Constants.FIELD_SESSION_ID);
+            String sessionId = StringUtils.getFieldFromConcatString(partAggrInfo, "\\|", Constants.FIELD_SESSION_ID);
 
-                int age = userInfoRow.getInt(3);
-                String professional = userInfoRow.getString(4);
-                String city = userInfoRow.getString(5);
-                String sex = userInfoRow.getString(6);
+            int age = userInfoRow.getInt(3);
+            String professional = userInfoRow.getString(4);
+            String city = userInfoRow.getString(5);
+            String sex = userInfoRow.getString(6);
 
-                String fullAggrInfo = partAggrInfo + "|" +
-                        Constants.FIELD_AGE + "=" + age + "|" +
-                        Constants.FIELD_PROFESSIONAL + "= " + professional + "|" +
-                        Constants.FIELD_CITY + "=" + city + "|" +
-                        Constants.FIELD_SEX + "=" + sex;
+            String fullAggrInfo = partAggrInfo + "|" +
+                    Constants.FIELD_AGE + "=" + age + "|" +
+                    Constants.FIELD_PROFESSIONAL + "= " + professional + "|" +
+                    Constants.FIELD_CITY + "=" + city + "|" +
+                    Constants.FIELD_SEX + "=" + sex;
 
-                return new Tuple2<>(sessionId, fullAggrInfo);
-            }
+            return new Tuple2<>(sessionId, fullAggrInfo);
         });
 
         return sessionId2FullAggrInfoRDD;
+    }
+
+    private static JavaPairRDD<String, String> filterSession(JavaPairRDD<String, String> sessionId2AggrRDD, final JSONObject taskParam) {
+
+        String startAge = ParamUtils.getParam(taskParam, Constants.PARAM_START_AGE);
+        String endAge = ParamUtils.getParam(taskParam, Constants.PARAM_END_AGE);
+        String professional = ParamUtils.getParam(taskParam, Constants.PARAM_PROFESSIONALS);
+        String cities = ParamUtils.getParam(taskParam, Constants.PARAM_CITIES);
+        String sex = ParamUtils.getParam(taskParam, Constants.PARAM_SEX);
+        String keywords = ParamUtils.getParam(taskParam, Constants.PARAM_KEYWORDS);
+        String categoryIds = ParamUtils.getParam(taskParam, Constants.PARAM_CATEGORY_IDS);
+
+        String _parameter = (startAge != null ? Constants.PARAM_START_AGE + "=" + startAge + "|" : "") +
+                (endAge != null ? Constants.PARAM_END_AGE + "=" + endAge + "|" : "") +
+                (professional != null ? Constants.PARAM_PROFESSIONALS + "=" + professional + "|" : "") +
+                (cities != null ? Constants.PARAM_CITIES + "=" + cities + "|" : "") +
+                (sex != null ? Constants.PARAM_SEX + "=" + sex + "|" : "") +
+                (keywords != null ? Constants.PARAM_KEYWORDS + "=" + keywords + "|" : "") +
+                (categoryIds != null ? Constants.PARAM_CATEGORY_IDS + "=" + categoryIds + "|" : "");
+
+        if (_parameter.endsWith("\\|")) {
+            _parameter = _parameter.substring(0, _parameter.length() - 1);
+        }
+        final String parameter = _parameter;
+        JavaPairRDD<String, String> filteredSessionId2AggrInfoRDD = sessionId2AggrRDD.filter((Function<Tuple2<String, String>, Boolean>) tuple -> {
+            String aggrInfo = tuple._2;
+
+            if (!ValidUtils.between(aggrInfo, Constants.FIELD_AGE, parameter, Constants.PARAM_START_AGE, Constants.PARAM_END_AGE)) {
+                return false;
+            }
+
+            if (!ValidUtils.in(aggrInfo, Constants.FIELD_PROFESSIONAL, parameter, Constants.PARAM_PROFESSIONALS)) {
+                return false;
+            }
+
+            if (!ValidUtils.in(aggrInfo, Constants.FIELD_CITY, parameter, Constants.PARAM_CITIES)) {
+                return false;
+            }
+
+            if (!ValidUtils.equal(aggrInfo, Constants.FIELD_SEX, parameter, Constants.PARAM_SEX)) {
+                return false;
+            }
+
+            if (!ValidUtils.in(aggrInfo, Constants.FIELD_SEARCH_KEYWORDS, parameter, Constants.PARAM_KEYWORDS)) {
+                return false;
+            }
+
+            if (!ValidUtils.in(aggrInfo, Constants.FIELD_CLICK_CATEGORY_IDS, parameter, Constants.PARAM_CATEGORY_IDS)) {
+                return false;
+            }
+
+            return true;
+        });
+        return filteredSessionId2AggrInfoRDD;
     }
 
     /**
