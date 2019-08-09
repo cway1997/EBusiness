@@ -15,6 +15,7 @@ public class SessionAggrStatDAOImpl implements ISessionAggrStatDAO {
 	 * 插入session聚合统计结果
 	 * @param sessionAggrStat 
 	 */
+	@Override
 	public void insert(SessionAggrStat sessionAggrStat) {
 		String sql = "insert into session_aggr_stat "
 				+ "values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"; 
