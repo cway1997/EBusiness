@@ -21,8 +21,7 @@ import org.apache.spark.sql.SparkSession;
 import org.apache.spark.util.AccumulatorV2;
 import scala.Tuple2;
 
-import java.util.Date;
-import java.util.Iterator;
+import java.util.*;
 
 /**
  * @Author: Cway
@@ -67,13 +66,15 @@ public class UserVisitSessionAnalyze {
         sc.sc().register(sessionAggrStatAccumulator, "sessionAggrStatAccumulator");
         JavaPairRDD<String, String> filteredSessionId2AggrRDD = filterSession(sessionId2AggrInfoRDD, taskParam, sessionAggrStatAccumulator);
 
-        filteredSessionId2AggrRDD.count();
-        calculateAndPersistAggrStat(sessionAggrStatAccumulator.value(),task.getTaskid());
+        randomExtractSession(filteredSessionId2AggrRDD);
+
+        calculateAndPersistAggrStat(sessionAggrStatAccumulator.value(), task.getTaskid());
         // 计算各个范围的session占比
 
 
         sc.close();
     }
+
 
     /**
      * 获取指定日期内的用户访问行为
@@ -178,7 +179,8 @@ public class UserVisitSessionAnalyze {
                     Constants.FIELD_SEARCH_KEYWORDS + "=" + searchKeywords + "|" +
                     Constants.FIELD_CLICK_CATEGORY_IDS + "=" + clickCategoryIds + "|" +
                     Constants.FIELD_VISIT_LENGTH + "=" + visitLength + "|" +
-                    Constants.FIELD_STEP_LENGTH + "=" + stepLength;
+                    Constants.FIELD_STEP_LENGTH + "=" + stepLength + "|" +
+                    Constants.FIELD_START_TIME + "=" + startTime;
 
             return new Tuple2<>(userId, partAggrInfo);
         });
@@ -189,7 +191,7 @@ public class UserVisitSessionAnalyze {
 
         JavaPairRDD<Long, Row> userId2InfoRDD = userInfoRDD.mapToPair((PairFunction<Row, Long, Row>) row -> new Tuple2<>(row.getLong(0), row));
 
-        JavaPairRDD<Long, Tuple2<String, Row>> userId2FullInfoRDD = userId2PartAggrInfoRDD.join(userId2InfoRDD);
+        JavaPairRDD<Long, Tuple2<String, Row>> userId2FullInfoRDD = (JavaPairRDD<Long, Tuple2<String, Row>>) userId2PartAggrInfoRDD.join(userId2InfoRDD);
 
         JavaPairRDD<String, String> sessionId2FullAggrInfoRDD = userId2FullInfoRDD.mapToPair((PairFunction<Tuple2<Long, Tuple2<String, Row>>, String, String>) tuple -> {
             String partAggrInfo = tuple._2._1;
@@ -332,6 +334,92 @@ public class UserVisitSessionAnalyze {
         }
     }
 
+    /**
+     * 随机抽取session
+     *
+     * @param sessionId2AggrRDD
+     */
+    private static void randomExtractSession(JavaPairRDD<String, String> sessionId2AggrRDD) {
+
+        JavaPairRDD<String, String> time2SessionRDD = sessionId2AggrRDD.mapToPair((PairFunction<Tuple2<String, String>, String, String>) tuple2 -> {
+
+            String aggrInfo = tuple2._2;
+
+            String startTime = StringUtils.getFieldFromConcatString(aggrInfo, "\\|", Constants.FIELD_START_TIME);
+            String dateHour = DateUtils.getDateHour(startTime);
+
+            return new Tuple2<>(dateHour, aggrInfo);
+        });
+
+        //<"yyyy-MM-dd_HH", aggrInfo> -> <"yyyy-MM-dd_HH", count>
+        Map<String, Long> countMap = time2SessionRDD.countByKey();
+
+
+        //<"yyyy-MM-dd_HH", count> -> <"yyyy-MM-dd",<"HH", count>>
+        Map<String, Map<String, Long>> dateHourCountMap = new HashMap<>();
+        for (Map.Entry<String, Long> countEntry : countMap.entrySet()) {
+            String dateHour = countEntry.getKey();
+            String date = dateHour.split("_")[0];
+            String hour = dateHour.split("_")[1];
+
+            Map<String, Long> hourCount = dateHourCountMap.get(date);
+            if (hourCount == null) {
+                hourCount = new HashMap<>();
+                dateHourCountMap.put(date, hourCount);
+            }
+            Long count = Long.valueOf(countEntry.getValue());
+            hourCount.put(hour, count);
+        }
+
+        // 总共要抽取100个session，先按照天数，进行平分
+        int extractNumberPerDay = 100 / dateHourCountMap.size();
+
+        // <"yyyy-MM-dd",<"HH", count>> -> <"yyyy-MM-dd", <"HH", (3, 5, 8, 22, ..)>>
+        Map<String, Map<String, List<Integer>>> dateHourExtractMap = new HashMap<>();
+        Random random = new Random();
+        for (Map.Entry<String, Map<String, Long>> dateHourCountEntry : dateHourCountMap.entrySet()) {
+            String date = dateHourCountEntry.getKey();
+            Map<String, Long> hourCountMap = dateHourCountEntry.getValue();
+
+            // 一天session总数
+            long sessionCount = 0L;
+            for (Long count : hourCountMap.values()) {
+                sessionCount += count;
+            }
+
+            Map<String, List<Integer>> hourExtractMap = dateHourExtractMap.get(date);
+            if (hourCountMap == null){
+                hourExtractMap = new HashMap<>();
+                dateHourExtractMap.put(date, hourExtractMap);
+            }
+
+            for (Map.Entry<String, Long> hourCountEntry : hourCountMap.entrySet()) {
+                String hour = hourCountEntry.getKey();
+                Long count = hourCountEntry.getValue();
+
+                int extractNumber = (int)(((double)count / (double)sessionCount) * extractNumberPerDay);
+                if (extractNumber > count){
+                    extractNumber = count.intValue();
+                }
+
+                List<Integer> extractList = hourExtractMap.get(hour);
+                if (extractList == null){
+                    extractList = new ArrayList<>();
+                    hourExtractMap.put(hour, extractList);
+                }
+
+                for (int i = 0; i < extractNumber; i++) {
+                    int extractIndex = random.nextInt(count.intValue());
+                    while(extractList.contains(extractIndex)) {
+                        extractIndex = random.nextInt(count.intValue());
+                    }
+                    extractList.add(extractIndex);
+                }
+            }
+        }
+
+    }
+
     private static void calculateAndPersistAggrStat(String value, long taskId) {
         long session_count = Long.valueOf(StringUtils.getFieldFromConcatString(value, "\\|", Constants.SESSION_COUNT));
         long visit_length_1s_3s = Long.valueOf(StringUtils.getFieldFromConcatString(value, "\\|", Constants.TIME_PERIOD_1s_3s));
@@ -351,22 +439,22 @@ public class UserVisitSessionAnalyze {
         long step_length_30_60 = Long.valueOf(StringUtils.getFieldFromConcatString(value, "\\|", Constants.STEP_PERIOD_30_60));
         long step_length_60 = Long.valueOf(StringUtils.getFieldFromConcatString(value, "\\|", Constants.STEP_PERIOD_60));
 
-        double visit_length_1s_3s_ratio = NumberUtils.formatDouble((double) visit_length_1s_3s / (double)session_count, 2);
-        double visit_length_4s_6s_ratio = NumberUtils.formatDouble((double)visit_length_4s_6s / (double)session_count, 2);
-        double visit_length_7s_9s_ratio = NumberUtils.formatDouble((double)visit_length_7s_9s / (double)session_count, 2);
-        double visit_length_10s_30s_ratio = NumberUtils.formatDouble((double)visit_length_10s_30s / (double)session_count, 2);
-        double visit_length_30s_60s_ratio = NumberUtils.formatDouble((double)visit_length_30s_60s / (double)session_count, 2);
-        double visit_length_1m_3m_ratio = NumberUtils.formatDouble((double)visit_length_1m_3m / (double)session_count, 2);
-        double visit_length_3m_10m_ratio = NumberUtils.formatDouble((double)visit_length_3m_10m / (double)session_count, 2);
-        double visit_length_10m_30m_ratio = NumberUtils.formatDouble((double)visit_length_10m_30m / (double)session_count, 2);
-        double visit_length_30m_ratio = NumberUtils.formatDouble((double)visit_length_30m / (double)session_count, 2);
+        double visit_length_1s_3s_ratio = NumberUtils.formatDouble((double) visit_length_1s_3s / (double) session_count, 2);
+        double visit_length_4s_6s_ratio = NumberUtils.formatDouble((double) visit_length_4s_6s / (double) session_count, 2);
+        double visit_length_7s_9s_ratio = NumberUtils.formatDouble((double) visit_length_7s_9s / (double) session_count, 2);
+        double visit_length_10s_30s_ratio = NumberUtils.formatDouble((double) visit_length_10s_30s / (double) session_count, 2);
+        double visit_length_30s_60s_ratio = NumberUtils.formatDouble((double) visit_length_30s_60s / (double) session_count, 2);
+        double visit_length_1m_3m_ratio = NumberUtils.formatDouble((double) visit_length_1m_3m / (double) session_count, 2);
+        double visit_length_3m_10m_ratio = NumberUtils.formatDouble((double) visit_length_3m_10m / (double) session_count, 2);
+        double visit_length_10m_30m_ratio = NumberUtils.formatDouble((double) visit_length_10m_30m / (double) session_count, 2);
+        double visit_length_30m_ratio = NumberUtils.formatDouble((double) visit_length_30m / (double) session_count, 2);
 
-        double step_length_1_3_ratio = NumberUtils.formatDouble((double)step_length_1_3 / (double)session_count, 2);
-        double step_length_4_6_ratio = NumberUtils.formatDouble((double)step_length_4_6 / (double)session_count, 2);
-        double step_length_7_9_ratio = NumberUtils.formatDouble((double)step_length_7_9 / (double)session_count, 2);
-        double step_length_10_30_ratio = NumberUtils.formatDouble((double)step_length_10_30 / (double)session_count, 2);
-        double step_length_30_60_ratio = NumberUtils.formatDouble((double)step_length_30_60 / (double)session_count, 2);
-        double step_length_60_ratio = NumberUtils.formatDouble((double)step_length_60 / (double)session_count, 2);
+        double step_length_1_3_ratio = NumberUtils.formatDouble((double) step_length_1_3 / (double) session_count, 2);
+        double step_length_4_6_ratio = NumberUtils.formatDouble((double) step_length_4_6 / (double) session_count, 2);
+        double step_length_7_9_ratio = NumberUtils.formatDouble((double) step_length_7_9 / (double) session_count, 2);
+        double step_length_10_30_ratio = NumberUtils.formatDouble((double) step_length_10_30 / (double) session_count, 2);
+        double step_length_30_60_ratio = NumberUtils.formatDouble((double) step_length_30_60 / (double) session_count, 2);
+        double step_length_60_ratio = NumberUtils.formatDouble((double) step_length_60 / (double) session_count, 2);
 
         SessionAggrStat sessionAggrStat = new SessionAggrStat();
         sessionAggrStat.setTaskid(taskId);

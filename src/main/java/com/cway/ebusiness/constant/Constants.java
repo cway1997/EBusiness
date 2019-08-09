@@ -23,7 +23,7 @@ public interface Constants {
     String FIELD_SEX = "sex";
     String FIELD_VISIT_LENGTH = "visitLength";
     String FIELD_STEP_LENGTH = "stepLength";
-
+    String FIELD_START_TIME = "startTime";
 
     String PARAM_START_DATE = "startDate";
     String PARAM_END_DATE = "endDate";
@@ -53,5 +53,6 @@ public interface Constants {
     String STEP_PERIOD_10_30 = "10_30";
     String STEP_PERIOD_30_60 = "30_60";
     String STEP_PERIOD_60 = "60";
+
 
 }
