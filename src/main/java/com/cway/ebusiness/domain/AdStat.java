@@ -10,8 +10,8 @@ public class AdStat {
 	private String date;
 	private String province;
 	private String city;
-	private long adid;
-	private long clickCount;
+	private Long adid;
+	private Long clickCount;
 	
 	public String getDate() {
 		return date;
@@ -31,16 +31,16 @@ public class AdStat {
 	public void setCity(String city) {
 		this.city = city;
 	}
-	public long getAdid() {
+	public Long getAdid() {
 		return adid;
 	}
-	public void setAdid(long adid) {
+	public void setAdid(Long adid) {
 		this.adid = adid;
 	}
-	public long getClickCount() {
+	public Long getClickCount() {
 		return clickCount;
 	}
-	public void setClickCount(long clickCount) {
+	public void setClickCount(Long clickCount) {
 		this.clickCount = clickCount;
 	}
 	

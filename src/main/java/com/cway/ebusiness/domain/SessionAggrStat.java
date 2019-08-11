@@ -7,8 +7,8 @@ package com.cway.ebusiness.domain;
  */
 public class SessionAggrStat {
 
-    private long taskid;
-    private long session_count;
+    private Long taskid;
+    private Long session_count;
     private double visit_length_1s_3s_ratio;
     private double visit_length_4s_6s_ratio;
     private double visit_length_7s_9s_ratio;
@@ -25,19 +25,19 @@ public class SessionAggrStat {
     private double step_length_30_60_ratio;
     private double step_length_60_ratio;
 
-    public long getTaskid() {
+    public Long getTaskid() {
         return taskid;
     }
 
-    public void setTaskid(long taskid) {
+    public void setTaskid(Long taskid) {
         this.taskid = taskid;
     }
 
-    public long getSession_count() {
+    public Long getSession_count() {
         return session_count;
     }
 
-    public void setSession_count(long session_count) {
+    public void setSession_count(Long session_count) {
         this.session_count = session_count;
     }
 

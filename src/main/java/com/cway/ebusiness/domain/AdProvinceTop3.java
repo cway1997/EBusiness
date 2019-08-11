@@ -9,8 +9,8 @@ public class AdProvinceTop3 {
 
 	private String date;
 	private String province;
-	private long adid;
-	private long clickCount;
+	private Long adid;
+	private Long clickCount;
 	
 	public String getDate() {
 		return date;
@@ -24,16 +24,16 @@ public class AdProvinceTop3 {
 	public void setProvince(String province) {
 		this.province = province;
 	}
-	public long getAdid() {
+	public Long getAdid() {
 		return adid;
 	}
-	public void setAdid(long adid) {
+	public void setAdid(Long adid) {
 		this.adid = adid;
 	}
-	public long getClickCount() {
+	public Long getClickCount() {
 		return clickCount;
 	}
-	public void setClickCount(long clickCount) {
+	public void setClickCount(Long clickCount) {
 		this.clickCount = clickCount;
 	}
 	

@@ -7,40 +7,40 @@ package com.cway.ebusiness.domain;
  */
 public class Top10Category {
 
-	private long taskid;
-	private long categoryid;
-	private long clickCount;
-	private long orderCount;
-	private long payCount;
+	private Long taskid;
+	private Long categoryid;
+	private Long clickCount;
+	private Long orderCount;
+	private Long payCount;
 	
-	public long getTaskid() {
+	public Long getTaskid() {
 		return taskid;
 	}
-	public void setTaskid(long taskid) {
+	public void setTaskid(Long taskid) {
 		this.taskid = taskid;
 	}
-	public long getCategoryid() {
+	public Long getCategoryid() {
 		return categoryid;
 	}
-	public void setCategoryid(long categoryid) {
+	public void setCategoryid(Long categoryid) {
 		this.categoryid = categoryid;
 	}
-	public long getClickCount() {
+	public Long getClickCount() {
 		return clickCount;
 	}
-	public void setClickCount(long clickCount) {
+	public void setClickCount(Long clickCount) {
 		this.clickCount = clickCount;
 	}
-	public long getOrderCount() {
+	public Long getOrderCount() {
 		return orderCount;
 	}
-	public void setOrderCount(long orderCount) {
+	public void setOrderCount(Long orderCount) {
 		this.orderCount = orderCount;
 	}
-	public long getPayCount() {
+	public Long getPayCount() {
 		return payCount;
 	}
-	public void setPayCount(long payCount) {
+	public void setPayCount(Long payCount) {
 		this.payCount = payCount;
 	}
 	

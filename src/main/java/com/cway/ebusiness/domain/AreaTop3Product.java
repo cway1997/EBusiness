@@ -7,19 +7,19 @@ package com.cway.ebusiness.domain;
  */
 public class AreaTop3Product {
 
-	private long taskid;
+	private Long taskid;
 	private String area;
 	private String areaLevel;
-	private long productid;
+	private Long productid;
 	private String cityInfos;
-	private long clickCount;
+	private Long clickCount;
 	private String productName;
 	private String productStatus;
 	
-	public long getTaskid() {
+	public Long getTaskid() {
 		return taskid;
 	}
-	public void setTaskid(long taskid) {
+	public void setTaskid(Long taskid) {
 		this.taskid = taskid;
 	}
 	public String getArea() {
@@ -34,10 +34,10 @@ public class AreaTop3Product {
 	public void setAreaLevel(String areaLevel) {
 		this.areaLevel = areaLevel;
 	}
-	public long getProductid() {
+	public Long getProductid() {
 		return productid;
 	}
-	public void setProductid(long productid) {
+	public void setProductid(Long productid) {
 		this.productid = productid;
 	}
 	public String getCityInfos() {
@@ -46,10 +46,10 @@ public class AreaTop3Product {
 	public void setCityInfos(String cityInfos) {
 		this.cityInfos = cityInfos;
 	}
-	public long getClickCount() {
+	public Long getClickCount() {
 		return clickCount;
 	}
-	public void setClickCount(long clickCount) {
+	public void setClickCount(Long clickCount) {
 		this.clickCount = clickCount;
 	}
 	public String getProductName() {

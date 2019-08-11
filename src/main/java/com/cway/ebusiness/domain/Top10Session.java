@@ -7,21 +7,21 @@ package com.cway.ebusiness.domain;
  */
 public class Top10Session {
 
-	private long taskid;
-	private long categoryid;
+	private Long taskid;
+	private Long categoryid;
 	private String sessionid;
-	private long clickCount;
+	private Long clickCount;
 	
-	public long getTaskid() {
+	public Long getTaskid() {
 		return taskid;
 	}
-	public void setTaskid(long taskid) {
+	public void setTaskid(Long taskid) {
 		this.taskid = taskid;
 	}
-	public long getCategoryid() {
+	public Long getCategoryid() {
 		return categoryid;
 	}
-	public void setCategoryid(long categoryid) {
+	public void setCategoryid(Long categoryid) {
 		this.categoryid = categoryid;
 	}
 	public String getSessionid() {
@@ -30,10 +30,10 @@ public class Top10Session {
 	public void setSessionid(String sessionid) {
 		this.sessionid = sessionid;
 	}
-	public long getClickCount() {
+	public Long getClickCount() {
 		return clickCount;
 	}
-	public void setClickCount(long clickCount) {
+	public void setClickCount(Long clickCount) {
 		this.clickCount = clickCount;
 	}
 	

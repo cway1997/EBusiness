@@ -98,6 +98,7 @@ public class AdUserClickCountDAOImpl implements IAdUserClickCountDAO {
      * @param adid   广告id
      * @return
      */
+    @Override
     public int findClickCountByMultiKey(String date, long userid, long adid) {
         String sql = "SELECT click_count "
                 + "FROM ad_user_click_count "

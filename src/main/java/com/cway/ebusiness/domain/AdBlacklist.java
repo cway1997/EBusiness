@@ -7,12 +7,12 @@ package com.cway.ebusiness.domain;
  */
 public class AdBlacklist {
 
-	private long userid;
+	private Long userid;
 
-	public long getUserid() {
+	public Long getUserid() {
 		return userid;
 	}
-	public void setUserid(long userid) {
+	public void setUserid(Long userid) {
 		this.userid = userid;
 	}
 	

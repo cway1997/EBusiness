@@ -7,29 +7,29 @@ package com.cway.ebusiness.domain;
  */
 public class SessionDetail {
 
-	private long taskid;
-	private long userid;
+	private Long taskid;
+	private Long userid;
 	private String sessionid;
-	private long pageid;
+	private Long pageid;
 	private String actionTime;
 	private String searchKeyword;
-	private long clickCategoryId;
-	private long clickProductId;
+	private Long clickCategoryId;
+	private Long clickProductId;
 	private String orderCategoryIds;
 	private String orderProductIds;
 	private String payCategoryIds;
 	private String payProductIds;
 	
-	public long getTaskid() {
+	public Long getTaskid() {
 		return taskid;
 	}
-	public void setTaskid(long taskid) {
+	public void setTaskid(Long taskid) {
 		this.taskid = taskid;
 	}
-	public long getUserid() {
+	public Long getUserid() {
 		return userid;
 	}
-	public void setUserid(long userid) {
+	public void setUserid(Long userid) {
 		this.userid = userid;
 	}
 	public String getSessionid() {
@@ -38,10 +38,10 @@ public class SessionDetail {
 	public void setSessionid(String sessionid) {
 		this.sessionid = sessionid;
 	}
-	public long getPageid() {
+	public Long getPageid() {
 		return pageid;
 	}
-	public void setPageid(long pageid) {
+	public void setPageid(Long pageid) {
 		this.pageid = pageid;
 	}
 	public String getActionTime() {
@@ -56,16 +56,16 @@ public class SessionDetail {
 	public void setSearchKeyword(String searchKeyword) {
 		this.searchKeyword = searchKeyword;
 	}
-	public long getClickCategoryId() {
+	public Long getClickCategoryId() {
 		return clickCategoryId;
 	}
-	public void setClickCategoryId(long clickCategoryId) {
+	public void setClickCategoryId(Long clickCategoryId) {
 		this.clickCategoryId = clickCategoryId;
 	}
-	public long getClickProductId() {
+	public Long getClickProductId() {
 		return clickProductId;
 	}
-	public void setClickProductId(long clickProductId) {
+	public void setClickProductId(Long clickProductId) {
 		this.clickProductId = clickProductId;
 	}
 	public String getOrderCategoryIds() {

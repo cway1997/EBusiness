@@ -7,16 +7,16 @@ package com.cway.ebusiness.domain;
  */
 public class SessionRandomExtract {
 
-	private long taskid;
+	private Long taskid;
 	private String sessionid;
 	private String startTime;
 	private String searchKeywords;
 	private String clickCategoryIds;
 	
-	public long getTaskid() {
+	public Long getTaskid() {
 		return taskid;
 	}
-	public void setTaskid(long taskid) {
+	public void setTaskid(Long taskid) {
 		this.taskid = taskid;
 	}
 	public String getSessionid() {

@@ -19,6 +19,7 @@ public class SessionDetailDAOImpl implements ISessionDetailDAO {
      *
      * @param sessionDetail
      */
+    @Override
     public void insert(SessionDetail sessionDetail) {
         String sql = "insert into session_detail values(?,?,?,?,?,?,?,?,?,?,?,?)";
 
@@ -44,6 +45,7 @@ public class SessionDetailDAOImpl implements ISessionDetailDAO {
      *
      * @param sessionDetails
      */
+    @Override
     public void insertBatch(List<SessionDetail> sessionDetails) {
         String sql = "insert into session_detail values(?,?,?,?,?,?,?,?,?,?,?,?)";
 

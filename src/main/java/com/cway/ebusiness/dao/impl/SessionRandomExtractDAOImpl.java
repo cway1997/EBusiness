@@ -16,6 +16,7 @@ public class SessionRandomExtractDAOImpl implements ISessionRandomExtractDAO {
      *
      * @param sessionRandomExtract
      */
+    @Override
     public void insert(SessionRandomExtract sessionRandomExtract) {
         String sql = "insert into session_random_extract values(?,?,?,?,?)";
 

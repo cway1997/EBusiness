@@ -8,9 +8,9 @@ package com.cway.ebusiness.domain;
 public class AdUserClickCount {
 
 	private String date;
-	private long userid;
-	private long adid;
-	private long clickCount;
+	private Long userid;
+	private Long adid;
+	private Long clickCount;
 	
 	public String getDate() {
 		return date;
@@ -18,22 +18,22 @@ public class AdUserClickCount {
 	public void setDate(String date) {
 		this.date = date;
 	}
-	public long getUserid() {
+	public Long getUserid() {
 		return userid;
 	}
-	public void setUserid(long userid) {
+	public void setUserid(Long userid) {
 		this.userid = userid;
 	}
-	public long getAdid() {
+	public Long getAdid() {
 		return adid;
 	}
-	public void setAdid(long adid) {
+	public void setAdid(Long adid) {
 		this.adid = adid;
 	}
-	public long getClickCount() {
+	public Long getClickCount() {
 		return clickCount;
 	}
-	public void setClickCount(long clickCount) {
+	public void setClickCount(Long clickCount) {
 		this.clickCount = clickCount;
 	}
 	

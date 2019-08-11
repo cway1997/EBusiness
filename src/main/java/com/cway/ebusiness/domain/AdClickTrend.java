@@ -10,8 +10,8 @@ public class AdClickTrend {
 	private String date;
 	private String hour;
 	private String minute;
-	private long adid;
-	private long clickCount;
+	private Long adid;
+	private Long clickCount;
 	
 	public String getDate() {
 		return date;
@@ -31,16 +31,16 @@ public class AdClickTrend {
 	public void setMinute(String minute) {
 		this.minute = minute;
 	}
-	public long getAdid() {
+	public Long getAdid() {
 		return adid;
 	}
-	public void setAdid(long adid) {
+	public void setAdid(Long adid) {
 		this.adid = adid;
 	}
-	public long getClickCount() {
+	public Long getClickCount() {
 		return clickCount;
 	}
-	public void setClickCount(long clickCount) {
+	public void setClickCount(Long clickCount) {
 		this.clickCount = clickCount;
 	}
 	

@@ -21,6 +21,7 @@ public class AdBlacklistDAOImpl implements IAdBlacklistDAO {
      *
      * @param adBlacklists
      */
+    @Override
     public void insertBatch(List<AdBlacklist> adBlacklists) {
         String sql = "INSERT INTO ad_blacklist VALUES(?)";
 
@@ -40,6 +41,7 @@ public class AdBlacklistDAOImpl implements IAdBlacklistDAO {
      *
      * @return
      */
+    @Override
     public List<AdBlacklist> findAll() {
         String sql = "SELECT * FROM ad_blacklist";
 
