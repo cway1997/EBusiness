@@ -19,6 +19,7 @@ import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.storage.StorageLevel;
 import org.apache.spark.util.AccumulatorV2;
 import scala.Tuple2;
 
@@ -63,9 +64,21 @@ public class UserVisitSessionAnalyze {
 
         // <sessionId, Row>
         JavaPairRDD<String, Row> sessionId2ActionRDD = getSessionId2ActionRDD(actionRDD);
+        /**
+         * 公共RDD持久化
+         * StorageLevel.MEMORY_ONLY()
+         * StorageLevel.MEMORY_ONLY_SER()
+         * StorageLevel.MEMORY_AND_DISK()
+         * StorageLevel.MEMORY_AND_DISK_SER()
+         * StorageLevel.DISK_ONLY()
+         *
+         * 后缀带_2的策略，双副本机制
+         */
+        sessionId2ActionRDD = sessionId2ActionRDD.persist(StorageLevel.MEMORY_ONLY());
+
 
         // <sessionId, (sessionId, searchKeywords, clickCategoryIds, age, professional, city, sex)>
-        JavaPairRDD<String, String> sessionId2AggrInfoRDD = aggregateBySession(sparkSession, actionRDD);
+        JavaPairRDD<String, String> sessionId2AggrInfoRDD = aggregateBySession(sparkSession, sessionId2ActionRDD);
 
         // 自定义累加器
         SessionAggrStatAccumulator sessionAggrStatAccumulator = new SessionAggrStatAccumulator();
@@ -74,12 +87,15 @@ public class UserVisitSessionAnalyze {
         // 过滤，按条件筛选，累计session
         JavaPairRDD<String, String> filteredSessionId2AggrRDD = filterSession(
                 sessionId2AggrInfoRDD, taskParam, sessionAggrStatAccumulator);
+        filteredSessionId2AggrRDD = filteredSessionId2AggrRDD.persist(StorageLevel.MEMORY_ONLY());
+
 
         JavaPairRDD<String, Row> sessionId2DetailRDD = getSessionId2DetailRDD(
                 sessionId2ActionRDD, filteredSessionId2AggrRDD);
+        sessionId2DetailRDD = sessionId2DetailRDD.persist(StorageLevel.MEMORY_ONLY());
 
         // 按比例随机抽取session
-        randomExtractSession(sc, task.getTaskid(), filteredSessionId2AggrRDD, sessionId2ActionRDD);
+        randomExtractSession(sc, task.getTaskid(), filteredSessionId2AggrRDD, sessionId2DetailRDD);
 
         // 计算各个范围的session占比
         calculateAndPersistAggrStat(sessionAggrStatAccumulator.value(), task.getTaskid());
@@ -140,18 +156,14 @@ public class UserVisitSessionAnalyze {
     /**
      * session粒度聚合
      *
-     * @param sparkSession sparkSession
-     * @param actionRDD    RowRDD
+     * @param sparkSession        sparkSession
+     * @param sessionId2ActionRDD (id,Row)RDD
      * @return (SessionId, aggrInfo)
      */
     private static JavaPairRDD<String, String> aggregateBySession(SparkSession sparkSession,
-                                                                  JavaRDD<Row> actionRDD) {
-        // Row -> <session,Row>
-        JavaPairRDD<String, Row> session2ActionRDD = actionRDD.mapToPair(
-                (PairFunction<Row, String, Row>) row -> new Tuple2<>(row.getString(2), row));
-
+                                                                  JavaPairRDD<String, Row> sessionId2ActionRDD) {
         // 分组
-        JavaPairRDD<String, Iterable<Row>> session2ActionsRDD = session2ActionRDD.groupByKey();
+        JavaPairRDD<String, Iterable<Row>> session2ActionsRDD = sessionId2ActionRDD.groupByKey();
 
         // <userId, partAggrInfo(sessionId,searchKeywords,clickCategoryIds)>
         JavaPairRDD<Long, String> userId2PartAggrInfoRDD = session2ActionsRDD.mapToPair(
@@ -398,7 +410,10 @@ public class UserVisitSessionAnalyze {
     /**
      * 随机抽取session
      *
+     * @param sc
+     * @param taskId
      * @param sessionId2AggrRDD
+     * @param sessionId2ActionRDD
      */
     private static void randomExtractSession(JavaSparkContext sc,
                                              final Long taskId,
@@ -440,6 +455,7 @@ public class UserVisitSessionAnalyze {
 
         // <"yyyy-MM-dd",<"HH", count>> -> <"yyyy-MM-dd", <"HH", (3, 5, 8, 22, ..)>>
         Map<String, Map<String, List<Integer>>> dateHourExtractMap = new HashMap<String, Map<String, List<Integer>>>();
+
         Random random = new Random();
         for (Map.Entry<String, Map<String, Long>> dateHourCountEntry : dateHourCountMap.entrySet()) {
             String date = dateHourCountEntry.getKey();
@@ -518,8 +534,6 @@ public class UserVisitSessionAnalyze {
          * 广播变量，很简单
          * 其实就是SparkContext的broadcast()方法，传入你要广播的变量，即可
          */
-
-
         final Broadcast<Map<String, Map<String, IntList>>> dateHourExtractMapBroadcast =
                 sc.broadcast(fastutilDateHourExtractMap);
 
