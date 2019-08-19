@@ -41,6 +41,7 @@ public interface Constants {
     String PARAM_SEX = "sex";
     String PARAM_KEYWORDS = "keywords";
     String PARAM_CATEGORY_IDS = "categoryIds";
+    String PARAM_TARGET_PAGE_FLOW = "targetPageFlow";
 
     String TIME_PERIOD_1s_3s = "1s_3s";
     String TIME_PERIOD_4s_6s = "4s_6s";
