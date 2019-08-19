@@ -12,8 +12,11 @@ public interface Constants {
     String JDBC_USER = "jdbc.user";
     String JDBC_PASSWORD = "jdbc.password";
     String SPARK_LOCAL = "spark.local";
+    String SPARK_LOCAL_TASKID_SESSION = "spark.local.taskId.session";
+    String SPARK_LOCAL_TASKID_PAGE = "spark.local.taskId.page";
 
     String SPARK_APP_NAME_SESSION = "UserVisitSessionAnalyze";
+    String SPARK_APP_NAME_PAGE = "PageOneStepConvertRate";
     String FIELD_SESSION_ID = "sessionId";
     String FIELD_SEARCH_KEYWORDS = "searchKeywords";
     String FIELD_CLICK_CATEGORY_IDS = "clickCategoryIds";

@@ -1,12 +1,10 @@
 package com.cway.ebusiness.spark.session;
 
 import com.alibaba.fastjson.JSONObject;
-import com.cway.ebusiness.conf.ConfigurationManager;
 import com.cway.ebusiness.constant.Constants;
 import com.cway.ebusiness.dao.*;
 import com.cway.ebusiness.dao.factory.DAOFactory;
 import com.cway.ebusiness.domain.*;
-import com.cway.ebusiness.test.MockData;
 import com.cway.ebusiness.util.*;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
@@ -16,7 +14,6 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.Optional;
 import org.apache.spark.api.java.function.*;
 import org.apache.spark.broadcast.Broadcast;
-import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.storage.StorageLevel;
@@ -51,16 +48,20 @@ public class UserVisitSessionAnalyze {
         JavaSparkContext sc = new JavaSparkContext(sparkSession.sparkContext());
 
         // 生成模拟测试数据
-        mockData(sc, sparkSession);
+        SparkUtils.mockData(sc, sparkSession);
 
         // user_visit_action,指定日期范围
         ITaskDAO taskDao = DAOFactory.getTaskDAO();
-        long taskId = ParamUtils.getTaskIdFromArgs(args);
+        long taskId = ParamUtils.getTaskIdFromArgs(args, Constants.SPARK_LOCAL_TASKID_SESSION);
         Task task = taskDao.findById(taskId);
+        if(task == null) {
+            System.out.println(new Date() + ": cannot find this task with id [" + taskId + "].");
+            return;
+        }
         JSONObject taskParam = JSONObject.parseObject(task.getTaskParam());
 
         // 原始RDD
-        JavaRDD<Row> actionRDD = getActionRDDByDateRange(sparkSession, taskParam);
+        JavaRDD<Row> actionRDD = SparkUtils.getActionRDDByDateRange(sparkSession, taskParam);
 
         // <sessionId, Row>
         JavaPairRDD<String, Row> sessionId2ActionRDD = getSessionId2ActionRDD(actionRDD);
@@ -107,39 +108,7 @@ public class UserVisitSessionAnalyze {
         getTop10Session(sc, task.getTaskid(), top10Category, sessionId2DetailRDD);
 
         sc.close();
-    }
-
-
-    /**
-     * 生成模拟数据
-     *
-     * @param sc
-     * @param sparkSession
-     */
-    private static void mockData(JavaSparkContext sc, SparkSession sparkSession) {
-        boolean local = ConfigurationManager.getBoolean(Constants.SPARK_LOCAL);
-        if (local) {
-            MockData.mock(sc, sparkSession);
-        }
-    }
-
-    /**
-     * 获取指定日期内的用户访问行为
-     *
-     * @param sparkSession sparkSession
-     * @param taskParam    筛选维度(参数)
-     * @return RowRDD
-     */
-    private static JavaRDD<Row> getActionRDDByDateRange(
-            SparkSession sparkSession, JSONObject taskParam) {
-        String startDate = ParamUtils.getParam(taskParam, Constants.PARAM_START_DATE);
-        String endDate = ParamUtils.getParam(taskParam, Constants.PARAM_END_DATE);
-        String sql = "select * " +
-                "from user_visit_action " +
-                "where date>='" + startDate + "'" +
-                "and date<='" + endDate + "'";
-        Dataset<Row> actionDS = sparkSession.sql(sql);
-        return actionDS.javaRDD();
+        sparkSession.stop();
     }
 
     /**
