@@ -11,6 +11,9 @@ public interface Constants {
     String JDBC_URL = "jdbc.url";
     String JDBC_USER = "jdbc.user";
     String JDBC_PASSWORD = "jdbc.password";
+    String JDBC_URL_PROD = "jdbc.url.prod";
+    String JDBC_USER_PROD = "jdbc.user.prod";
+    String JDBC_PASSWORD_PROD = "jdbc.password.prod";
     String SPARK_LOCAL = "spark.local";
     String SPARK_LOCAL_TASKID_SESSION = "spark.local.taskId.session";
     String SPARK_LOCAL_TASKID_PAGE = "spark.local.taskId.page";

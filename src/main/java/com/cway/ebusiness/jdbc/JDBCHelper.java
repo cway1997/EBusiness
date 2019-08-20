@@ -19,9 +19,9 @@ public class JDBCHelper {
     private static JDBCHelper instance = null;
 
     public static JDBCHelper getInstance() {
-        if(instance == null) {
-            synchronized(JDBCHelper.class) {
-                if(instance == null) {
+        if (instance == null) {
+            synchronized (JDBCHelper.class) {
+                if (instance == null) {
                     instance = new JDBCHelper();
                 }
             }
@@ -33,11 +33,22 @@ public class JDBCHelper {
 
     private JDBCHelper() {
         int datasourceSize = ConfigurationManager.getInteger(Constants.JDBC_DATASOURCE_SIZE);
-
+        boolean local = ConfigurationManager.getBoolean(Constants.SPARK_LOCAL);
         for (int i = 0; i < datasourceSize; i++) {
-            String url = ConfigurationManager.getProperty(Constants.JDBC_URL);
-            String user = ConfigurationManager.getProperty(Constants.JDBC_USER);
-            String password = ConfigurationManager.getProperty(Constants.JDBC_PASSWORD);
+            String url = null;
+            String user = null;
+            String password = null;
+
+            if (local) {
+                url = ConfigurationManager.getProperty(Constants.JDBC_URL);
+                user = ConfigurationManager.getProperty(Constants.JDBC_USER);
+                password = ConfigurationManager.getProperty(Constants.JDBC_PASSWORD);
+            } else {
+                url = ConfigurationManager.getProperty(Constants.JDBC_URL_PROD);
+                user = ConfigurationManager.getProperty(Constants.JDBC_USER_PROD);
+                password = ConfigurationManager.getProperty(Constants.JDBC_PASSWORD_PROD);
+            }
+
             try {
                 Connection conn = DriverManager.getConnection(url, user, password);
                 datasource.push(conn);
@@ -145,7 +156,7 @@ public class JDBCHelper {
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            if(conn != null) {
+            if (conn != null) {
                 datasource.push(conn);
             }
         }
