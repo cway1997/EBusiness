@@ -74,6 +74,9 @@ public class PageOneStepConvertRate {
         Map<String, Double> pageSplitConvertRateMap = computePageSplitConvertRate(taskParam, pageSplitPVMap, startPagePV);
 
         persistConvertRate(task.getTaskid(), pageSplitConvertRateMap);
+
+        sc.close();
+        sparkSession.close();
     }
 
     private static JavaPairRDD<String, Integer> generateAndMatchPageSplit(

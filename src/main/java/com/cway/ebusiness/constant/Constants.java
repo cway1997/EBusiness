@@ -17,6 +17,7 @@ public interface Constants {
     String SPARK_LOCAL = "spark.local";
     String SPARK_LOCAL_TASKID_SESSION = "spark.local.taskId.session";
     String SPARK_LOCAL_TASKID_PAGE = "spark.local.taskId.page";
+    String SPARK_LOCAL_TASKID_PRODUCT = "spark.local.taskId.product";
 
     String SPARK_APP_NAME_SESSION = "UserVisitSessionAnalyze";
     String SPARK_APP_NAME_PAGE = "PageOneStepConvertRate";
