@@ -84,9 +84,10 @@ public class JDBCHelper {
         try {
             conn = getConnection();
             pstmt = conn.prepareStatement(sql);
-
-            for (int i = 0; i < params.length; i++) {
-                pstmt.setObject(i + 1, params[i]);
+            if(params != null && params.length > 0) {
+                for (int i = 0; i < params.length; i++) {
+                    pstmt.setObject(i + 1, params[i]);
+                }
             }
             rtn = pstmt.executeUpdate();
         } catch (Exception e) {
@@ -114,8 +115,10 @@ public class JDBCHelper {
         try {
             conn = getConnection();
             pstmt = conn.prepareStatement(sql);
-            for (int i = 0; i < params.length; i++) {
-                pstmt.setObject(i + 1, params[i]);
+            if(params != null && params.length > 0) {
+                for (int i = 0; i < params.length; i++) {
+                    pstmt.setObject(i + 1, params[i]);
+                }
             }
             rs = pstmt.executeQuery();
             callback.process(rs);
@@ -144,12 +147,14 @@ public class JDBCHelper {
             // 取消自动提交
             conn.setAutoCommit(false);
             pstmt = conn.prepareStatement(sql);
-            // addBatch
-            for (Object[] params : paramsList) {
-                for (int i = 0; i < params.length; i++) {
-                    pstmt.setObject(i + 1, params[i]);
+            if(paramsList != null && paramsList.size() > 0) {
+                // addBatch
+                for (Object[] params : paramsList) {
+                    for (int i = 0; i < params.length; i++) {
+                        pstmt.setObject(i + 1, params[i]);
+                    }
+                    pstmt.addBatch();
                 }
-                pstmt.addBatch();
             }
             rtn = pstmt.executeBatch();
             conn.commit();

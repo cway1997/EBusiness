@@ -88,6 +88,10 @@ public class AreaTop3ProductSpark {
 //        sparkSession.close();
     }
 
+    private static void testDriverHA(){
+
+    }
+
     private static JavaPairRDD<Long, Row> getCityId2ClickActionRDDByDate(SparkSession sparkSession,
                                                                          String startDate, String endDate) {
         String sql =

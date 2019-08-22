@@ -18,6 +18,10 @@ public interface Constants {
     String SPARK_LOCAL_TASKID_SESSION = "spark.local.taskId.session";
     String SPARK_LOCAL_TASKID_PAGE = "spark.local.taskId.page";
     String SPARK_LOCAL_TASKID_PRODUCT = "spark.local.taskId.product";
+//    String KAFKA_METADATE_BROKER_LIST = "kafka.metadata.broker.list";
+    String BOOTSTRAP_SERVERS = "bootstrap.servers";
+    String KAFKA_TOPICS="kafka.topics";
+    String GROUP_ID="group.id";
 
     String SPARK_APP_NAME_SESSION = "UserVisitSessionAnalyze";
     String SPARK_APP_NAME_PAGE = "PageOneStepConvertRate";
