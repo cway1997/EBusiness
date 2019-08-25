@@ -47,8 +47,8 @@ public class MockRealTimeData extends Thread {
 		while(true) {	
 			String province = provinces[random.nextInt(5)];  
 			String city = provinceCityMap.get(province)[random.nextInt(2)];
-			String log = System.currentTimeMillis() + " " + province + " " + city + " "
-					+ random.nextInt(1000) + " " + random.nextInt(10);  
+			String log = System.currentTimeMillis() + "_" + province + "_" + city + "_"
+					+ random.nextInt(1000) + "_" + random.nextInt(10);
 			producer.send(new ProducerRecord<>("AdRealTimeLog", log));
 			
 			try {

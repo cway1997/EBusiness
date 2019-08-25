@@ -6,6 +6,7 @@ import com.cway.ebusiness.dao.*;
 import com.cway.ebusiness.dao.factory.DAOFactory;
 import com.cway.ebusiness.domain.*;
 import com.cway.ebusiness.util.DateUtils;
+import com.cway.ebusiness.util.SparkUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.spark.SparkConf;
@@ -21,11 +22,9 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SparkSession;
-import org.apache.spark.sql.hive.HiveContext;
 import org.apache.spark.sql.hive.HiveUtils;
 import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructType;
-import org.apache.spark.streaming.Duration;
 import org.apache.spark.streaming.Durations;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaInputDStream;
@@ -47,13 +46,13 @@ public class AdClickRealTimeStatSpark {
     public static void main(String[] args) {
         // 构建SparkStreaming上下文
         SparkConf conf = new SparkConf()
-                .setMaster("local[2]")
                 .setAppName("AdClickRealTimeStatSpark");
+        SparkUtils.setMaster(conf);
 //                .set("spark.streaming.blockInterval", "50")
 //                .set("spark.streaming.receiver.writeAheadLog.enable", "true");
 
         JavaStreamingContext jssc = new JavaStreamingContext(conf, Durations.seconds(5));
-        jssc.checkpoint("hdfs://192.168.201.101:9090/streaming_checkpoint");
+        jssc.checkpoint("hdfs://192.168.201.101:9000/streaming_checkpoint");
 
         Map<String, Object> kafkaParams = new HashMap<>();
         //Kafka服务监听端口
@@ -164,7 +163,7 @@ public class AdClickRealTimeStatSpark {
         JavaPairDStream<String, Long> dailyUserAdClickDStream = filteredAdRealTimeLogDStream.mapToPair(
                 (PairFunction<Tuple2<String, String>, String, Long>) tuple2 -> {
                     String log = tuple2._2;
-                    String[] logSplited = log.split(" ");
+                    String[] logSplited = log.split("_");
 
                     String timestamp = logSplited[0];
                     Date date = new Date(Long.valueOf(timestamp));
@@ -293,6 +292,7 @@ public class AdClickRealTimeStatSpark {
                             while (iterator.hasNext()) {
                                 Tuple2<String, Long> tuple2 = iterator.next();
                                 String key = tuple2._1;
+                                // dateKey + "_" + province + "_" + city + "_" + adId
                                 String[] keySplited = key.split("_");
                                 String date = keySplited[0];
                                 String province = keySplited[1];

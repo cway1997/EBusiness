@@ -76,6 +76,7 @@ public class JDBCHelper {
      * @param params
      * @return 影响行数
      */
+
     public int executeUpdate(String sql, Object[] params) {
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -84,7 +85,7 @@ public class JDBCHelper {
         try {
             conn = getConnection();
             pstmt = conn.prepareStatement(sql);
-            if(params != null && params.length > 0) {
+            if (params != null && params.length > 0) {
                 for (int i = 0; i < params.length; i++) {
                     pstmt.setObject(i + 1, params[i]);
                 }
@@ -100,6 +101,7 @@ public class JDBCHelper {
         return rtn;
     }
 
+
     /**
      * 执行查询SQL
      *
@@ -107,6 +109,7 @@ public class JDBCHelper {
      * @param params
      * @param callback
      */
+
     public void executeQuery(String sql, Object[] params, QueryCallback callback) {
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -115,7 +118,7 @@ public class JDBCHelper {
         try {
             conn = getConnection();
             pstmt = conn.prepareStatement(sql);
-            if(params != null && params.length > 0) {
+            if (params != null && params.length > 0) {
                 for (int i = 0; i < params.length; i++) {
                     pstmt.setObject(i + 1, params[i]);
                 }
@@ -131,6 +134,7 @@ public class JDBCHelper {
         }
     }
 
+
     /**
      * 批量执行结构一样的SQL
      *
@@ -138,6 +142,7 @@ public class JDBCHelper {
      * @param paramsList
      * @return
      */
+
     public int[] executeBatch(String sql, List<Object[]> paramsList) {
         int[] rtn = null;
         Connection conn = null;
@@ -147,7 +152,7 @@ public class JDBCHelper {
             // 取消自动提交
             conn.setAutoCommit(false);
             pstmt = conn.prepareStatement(sql);
-            if(paramsList != null && paramsList.size() > 0) {
+            if (paramsList != null && paramsList.size() > 0) {
                 // addBatch
                 for (Object[] params : paramsList) {
                     for (int i = 0; i < params.length; i++) {
@@ -168,16 +173,21 @@ public class JDBCHelper {
         return rtn;
     }
 
+
     /**
      * 内部接口：查询回调
      */
+
     public static interface QueryCallback {
+
         /**
          * 处理查询结果
          *
          * @param resultSet
          * @throws Exception
          */
+
         void process(ResultSet resultSet) throws Exception;
     }
 }
+

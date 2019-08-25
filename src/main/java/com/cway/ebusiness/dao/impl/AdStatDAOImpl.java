@@ -26,18 +26,15 @@ public class AdStatDAOImpl implements IAdStatDAO {
 
         String selectSQL = "SELECT count(*) "
                 + "FROM ad_stat "
-                + "WHERE date=? "
-                + "AND province=? "
-                + "AND city=? "
-                + "AND ad_id=?";
+                + "WHERE date=? AND province=? AND ad_id=? AND city=?";
 
         for (AdStat adStat : adStats) {
             final AdStatQueryResult queryResult = new AdStatQueryResult();
 
             Object[] params = new Object[]{adStat.getDate(),
                     adStat.getProvince(),
-                    adStat.getCity(),
-                    adStat.getAdid()};
+                    adStat.getAdid(),
+                    adStat.getCity()};
 
             jdbcHelper.executeQuery(selectSQL, params, new JDBCHelper.QueryCallback() {
 
@@ -78,20 +75,19 @@ public class AdStatDAOImpl implements IAdStatDAO {
 
         // 对于需要更新的数据，执行批量更新操作
         String updateSQL = "UPDATE ad_stat SET click_count=? "
-                + "FROM ad_stat "
                 + "WHERE date=? "
-                + "AND province=? "
-                + "AND city=? "
-                + "AND ad_id=?";
+                + "AND ad_id=? "
+                + "AND province=? " +
+                "AND city=? ";
 
         List<Object[]> updateParamsList = new ArrayList<Object[]>();
 
         for (AdStat adStat : updateAdStats) {
             Object[] params = new Object[]{adStat.getClickCount(),
                     adStat.getDate(),
+                    adStat.getAdid(),
                     adStat.getProvince(),
-                    adStat.getCity(),
-                    adStat.getAdid()};
+                    adStat.getCity()};
             updateParamsList.add(params);
         }
 
